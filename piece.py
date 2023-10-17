@@ -38,10 +38,9 @@ class Piece(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.topleft = (self.position[0]*75, 100+self.position[1]*75)
     def update(self):
+        self.dragging = False
         if self.rect.collidepoint(pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
             self.dragging = True
-        else:
-            self.dragging = False
         if self.dragging:
             self.rect.center = pygame.mouse.get_pos()
         else:
