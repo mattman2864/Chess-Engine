@@ -1,19 +1,20 @@
 import pygame
 import numpy as np
 
-RESOLUTION = (600, 600)
+RESOLUTION = (1000, 1000)
 SQUARE_SIZE = RESOLUTION[0]/8
 
 pieces = np.array([ 
          4,  2,  3,  6,  5,  3,  2,  4,
          1,  1,  1,  1,  1,  1,  1,  1,
          0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  5,  0,  0,  4,
-         0,  0,  0,  0,  -6,  0,  0,  0,
+         0,  0,  0,  0,  0,  0,  0,  0,
+         0,  0,  0,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0,
         -1, -1, -1, -1, -1, -1, -1, -1,
         -4, -2, -3, -6, -5, -3, -2, -4,
 ])
+turn = 1
 
 def drawSquares(screen, selected):
     dark = "#593a1a"
@@ -62,8 +63,17 @@ def drawMoves(screen, selected):
     for i in range(8):
         for j in range(8):
             if ctn((i, j)) in findMoves(pieces, selected): pygame.draw.ellipse(screen, move, pygame.Rect(i*SQUARE_SIZE+(SQUARE_SIZE/3), j*SQUARE_SIZE+(SQUARE_SIZE/3), SQUARE_SIZE/3, SQUARE_SIZE/3))
+def checkForPromotion(pieces):
+    for i in range(8):
+        if pieces[i] == -1:
+            pieces[i] = -5
+    for i in range(56, 64):
+        if pieces[i] == 1:
+            pieces[i] = 5
 def findMoves(pieces, square):
     if not type(square) == int:
+        return []
+    if not pieces[square]/abs(pieces[square]) == turn:
         return []
     moves = []
     if abs(pieces[square]) == 1:
@@ -84,8 +94,9 @@ def findPawnMoves(pieces, square, color):
     moves = []
     if not pieces[square+(1 if color>0 else -1)*8]:
         moves.append(square+(1 if color>0 else -1)*8)
-        if (not pieces[square+(1 if color>0 else -1)*16]) and square//8 in [1, 6]:
-            moves.append(square+(1 if color>0 else -1)*16)
+        if (color == 1 and square//8 == 1) or (color == -1 and square//8 == 6):
+            if (not pieces[square+(1 if color>0 else -1)*16]):
+                moves.append(square+(1 if color>0 else -1)*16)
     if pieces[square+(1 if color>0 else -1)*7] * color < 0:
         moves.append(square+(1 if color>0 else -1)*7)
     if pieces[square+(1 if color>0 else -1)*9] * color < 0:
@@ -172,6 +183,11 @@ def isOnEdge(square):
     return square%8 in [0, 7] or square//8 in [0,7]
 def squareColor(square):
     return 'white' if (ntc(square)[0] + ntc(square)[1]) % 2 == 0 else 'black'
+def movePiece(start, end, pieces):
+    pieces[end] = pieces[start]
+    pieces[start] = 0
+    return pieces
+
 
 pygame.init()
 screen = pygame.display.set_mode(RESOLUTION)
@@ -186,10 +202,14 @@ while True:
         if event.type == pygame.MOUSEBUTTONDOWN:
             mpos = pygame.mouse.get_pos()
             new_square = int(mpos[1]//SQUARE_SIZE*8 + mpos[0]//SQUARE_SIZE)
+            if new_square in findMoves(pieces, selected_square):
+                pieces = movePiece(selected_square, new_square, pieces)
+                turn *= -1
+                new_square = None
             if new_square == selected_square:
                 new_square = None
             selected_square = new_square
-
+    checkForPromotion(pieces)
     drawSquares(screen, selected_square)
     drawPieces(screen, pieces)
     drawMoves(screen, selected_square)
