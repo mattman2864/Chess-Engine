@@ -1,7 +1,7 @@
 import pygame
 import numpy as np
 
-RESOLUTION = (1000, 1000)
+RESOLUTION = (600, 600)
 SQUARE_SIZE = RESOLUTION[0]/8
 
 pieces = np.array([ 
