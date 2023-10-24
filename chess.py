@@ -63,14 +63,34 @@ def drawPieces(screen, pieces):
         rect = img.get_rect()
         rect.topleft = (i%8*SQUARE_SIZE,i//8*SQUARE_SIZE)
         screen.blit(img, rect)
-def drawMoves(screen, selected):
-    move = "#ff0000"
-    for i in range(8):
-        for j in range(8):
-            if i*8+j in findMoves(pieces, selected, True): pygame.draw.ellipse(screen, move, pygame.Rect(i*SQUARE_SIZE+(SQUARE_SIZE/3), j*SQUARE_SIZE+(SQUARE_SIZE/3), SQUARE_SIZE/3, SQUARE_SIZE/3))
-def findMoves(board):
-    pieces = getAllPieces(board)
-    print(pieces)
+def drawMoves(screen, moves):
+    move_color = "#ff0000"
+    for move in moves:
+        if PLAYING_AS == "white":
+            move = 63 - move
+        pygame.draw.ellipse(screen, move_color, pygame.Rect(move%8*SQUARE_SIZE+0.3*SQUARE_SIZE, move//8*SQUARE_SIZE+.3*SQUARE_SIZE, SQUARE_SIZE*.4, SQUARE_SIZE*.4))
+
+def findMoves(board, square):
+    piece = board[square]
+    moves = []
+    match abs(piece):
+        case 1:
+            moves += getPawnMoves(board, square)
+    return moves
+
+def getPawnMoves(board, square):
+    moves = []
+    piece = board[square]
+    if abs(square // 8 - 3.5) - 2.5 == 0:
+        moves.append(square + 16 * piece)
+    moves.append(square + 8 * piece)
+    if board[square + 7 * piece] < 0:
+        moves.append(square + 7 * piece)
+    if board[square + 9 * piece] < 0:
+        moves.append(square + 9 * piece)
+    moves = [move for move in moves if 0<=move<=63]
+    return moves
+
 def getAllPieces(board):
     squares = []
     for i in range(63):
@@ -83,6 +103,7 @@ pygame.init()
 screen = pygame.display.set_mode(RESOLUTION)
 clock = pygame.time.Clock()
 selected_square = None
+moves = []
 
 while True:
     for event in pygame.event.get():
@@ -97,12 +118,17 @@ while True:
                 new_square = 63-int(mpos[1]//SQUARE_SIZE*8 + mpos[0]//SQUARE_SIZE)
             if new_square == selected_square:
                 new_square = None
+            if type(new_square) == int:
+                moves = findMoves(pieces, new_square)
+            else:
+                moves = []
             selected_square = new_square
 
     drawSquares(screen)
     if type(selected_square) == int:
         drawSelectedSquares(screen, selected_square)
     drawPieces(screen, pieces)
+    drawMoves(screen, moves)
 
     clock.tick(60)
     pygame.display.update()
