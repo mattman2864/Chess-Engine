@@ -14,18 +14,18 @@ STARTING_BOARD = np.array([
         -1, -1, -1, -1, -1, -1, -1, -1,
         -4, -2, -3, -6, -5, -3, -2, -4,
 ])
-EMPTY_BOARD = np.array([
+TEST_BOARD = np.array([
+    3, 0, 0, 0, 3, 0, 0, 0,
+    3, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 1, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 2, 0, 0,
-    0, 0, 0, 4, 0, 0, 0, 0,
+    3, 0, 0, 0, 3, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 3, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
 ])
 
-pieces = EMPTY_BOARD
+pieces = TEST_BOARD
 
 turn = 1
 
@@ -126,16 +126,12 @@ def getBishopMoves(board, square):
     while len(dirs):
         for dir in dirs:
             checkmove = square + dir * i
-            if not (checkmove + checkmove//8)%2==(square+square//8)%2:
+            if (checkmove+(checkmove//8))%2 != (square+(square//8))%2:
                 dirs.remove(dir)
-            elif not 0 <= checkmove <= 63:
-                dirs.remove(dir)
-            elif board[checkmove] * board[square] > 0:
-                dirs.remove(dir)
-            elif board[checkmove] * board[square] < 0:
-                moves.append(checkmove)
+            elif not 0 <= checkmove < 64:
                 dirs.remove(dir)
             else:
+                print(checkmove)
                 moves.append(checkmove)
         i += 1
     return moves
