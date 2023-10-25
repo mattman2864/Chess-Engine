@@ -1,7 +1,7 @@
 import pygame
 import numpy as np
 
-RESOLUTION = (600, 600)
+RESOLUTION = (900, 900)
 SQUARE_SIZE = RESOLUTION[0]/8
 PLAYING_AS = "white"
 pieces = np.array([ 
@@ -9,7 +9,7 @@ pieces = np.array([
          1,  1,  1,  1,  1,  1,  1,  1,
          0,  0,  0,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,
+         0,  0,  0,  1,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0,
         -1, -1, -1, -1, -1, -1, -1, -1,
         -4, -2, -3, -6, -5, -3, -2, -4,
@@ -22,7 +22,7 @@ def drawSquares(screen):
     for row in range(8):
         for col in range(8):
             color = light if (row + col)%2==0 else dark
-            pygame.draw.rect(screen, color, pygame.Rect(row*SQUARE_SIZE, col*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+            pygame.draw.rect(screen, color, pygame.Rect(row*SQUARE_SIZE, col*SQUARE_SIZE, SQUARE_SIZE+1, SQUARE_SIZE+1))
 def drawSelectedSquares(screen, square):
     select = "#84b32e"
     if PLAYING_AS == "black":
@@ -81,7 +81,7 @@ def findMoves(board, square):
 def getPawnMoves(board, square):
     moves = []
     piece = board[square]
-    if abs(square // 8 - 3.5) - 2.5 == 0:
+    if abs(square // 8 - 3.5) - 2.5 == 0 and board[square + 8 * piece] == 0:
         moves.append(square + 16 * piece)
     moves.append(square + 8 * piece)
     if board[square + 7 * piece] < 0:
@@ -89,6 +89,7 @@ def getPawnMoves(board, square):
     if board[square + 9 * piece] < 0:
         moves.append(square + 9 * piece)
     moves = [move for move in moves if 0<=move<=63]
+    moves = [move for move in moves if move % 8 != square % 8 or board[move] * piece == 0]
     return moves
 
 def getAllPieces(board):
