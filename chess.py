@@ -4,16 +4,29 @@ import numpy as np
 RESOLUTION = (900, 900)
 SQUARE_SIZE = RESOLUTION[0]/8
 PLAYING_AS = "white"
-pieces = np.array([ 
+STARTING_BOARD = np.array([ 
          4,  2,  3,  6,  5,  3,  2,  4,
          1,  1,  1,  1,  1,  1,  1,  1,
          0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  1,  0,  0,  0,  0,
+         0,  0,  -4,  0,  4,  0,  0,  0,
+         0,  0,  4,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0,
         -1, -1, -1, -1, -1, -1, -1, -1,
         -4, -2, -3, -6, -5, -3, -2, -4,
 ])
+TEST_BOARD = np.array([
+    3, 0, 0, 0, 3, 0, 0, 0,
+    3, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    3, 0, 0, 0, 3, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 3, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+])
+
+pieces = TEST_BOARD
+
 turn = 1
 
 def drawSquares(screen):
@@ -69,42 +82,118 @@ def drawMoves(screen, moves):
         if PLAYING_AS == "white":
             move = 63 - move
         pygame.draw.ellipse(screen, move_color, pygame.Rect(move%8*SQUARE_SIZE+0.3*SQUARE_SIZE, move//8*SQUARE_SIZE+.3*SQUARE_SIZE, SQUARE_SIZE*.4, SQUARE_SIZE*.4))
-
 def findMoves(board, square):
     piece = board[square]
     moves = []
     match abs(piece):
         case 1:
             moves += getPawnMoves(board, square)
+        case 2:
+            moves += getKnightMoves(board, square)
+        case 3:
+            moves += getBishopMoves(board, square)
+        case 4:
+            moves += getRookMoves(board, square)
     return moves
-
 def getPawnMoves(board, square):
     moves = []
     piece = board[square]
     if abs(square // 8 - 3.5) - 2.5 == 0 and board[square + 8 * piece] == 0:
         moves.append(square + 16 * piece)
     moves.append(square + 8 * piece)
-    if board[square + 7 * piece] < 0:
+    if board[square + 7 * piece] < 0 or square + 7 * piece == en_passant_square:
         moves.append(square + 7 * piece)
-    if board[square + 9 * piece] < 0:
+    if board[square + 9 * piece] < 0 or square + 9 * piece == en_passant_square:
         moves.append(square + 9 * piece)
     moves = [move for move in moves if 0<=move<=63]
     moves = [move for move in moves if move % 8 != square % 8 or board[move] * piece == 0]
     return moves
-
 def getAllPieces(board):
     squares = []
     for i in range(63):
         if board[i]:
             squares.append(i)
     return squares
-
+def getKnightMoves(board, square):
+    moves = []
+    for i in [6, 10, 15, 17]:
+        moves += [square + i, square-i]
+    moves = [move for move in moves if 0 <= move <= 63 and board[move]*board[square]<=0 and abs(move%8-square%8) <= 2]
+    return moves
+def getBishopMoves(board, square):
+    moves = []
+    i = 1
+    dirs = [9, -9, 7, -7]
+    while len(dirs):
+        for dir in dirs:
+            checkmove = square + dir * i
+            if (checkmove+(checkmove//8))%2 != (square+(square//8))%2:
+                dirs.remove(dir)
+            elif not 0 <= checkmove < 64:
+                dirs.remove(dir)
+            else:
+                print(checkmove)
+                moves.append(checkmove)
+        i += 1
+    return moves
+def getRookMoves(board, square):
+    moves = []
+    i = 1
+    dirs = ['n', 'e', 's', 'w']
+    while len(dirs):
+        if 'n' in dirs:
+            checkmove = square + 8 * i
+            if  not 0 <= checkmove <= 63:
+                dirs.remove('n')
+            elif board[checkmove] * board[square] > 0:
+                dirs.remove('n')
+            elif board[checkmove] * board[square] < 0 or checkmove % 8 in [0, 7] or checkmove // 8 in [0, 7]:
+                moves.append(checkmove)
+                dirs.remove('n')
+            else:
+                moves.append(checkmove)
+        if 'e' in dirs:
+            checkmove = square + i
+            if  not 0 <= checkmove <= 63:
+                dirs.remove('e')
+            elif board[checkmove] * board[square] > 0:
+                dirs.remove('e')
+            elif board[checkmove] * board[square] < 0 or checkmove % 8 in [0, 7] or checkmove // 8 in [0, 7]:
+                moves.append(checkmove)
+                dirs.remove('e')
+            else:
+                moves.append(checkmove)
+        if 's' in dirs:
+            checkmove = square - 8 * i
+            if  not 0 <= checkmove <= 63:
+                dirs.remove('s')
+            elif board[checkmove] * board[square] > 0:
+                dirs.remove('s')
+            elif board[checkmove] * board[square] < 0 or checkmove % 8 in [0, 7] or checkmove // 8 in [0, 7]:
+                moves.append(checkmove)
+                dirs.remove('s')
+            else:
+                moves.append(checkmove)
+        if 'w' in dirs:
+            checkmove = square - i
+            if  not 0 <= checkmove <= 63:
+                dirs.remove('w')
+            elif board[checkmove] * board[square] > 0:
+                dirs.remove('w')
+            elif board[checkmove] * board[square] < 0 or checkmove % 8 in [0, 7] or checkmove // 8 in [0, 7]:
+                moves.append(checkmove)
+                dirs.remove('w')
+            else:
+                moves.append(checkmove)
+        i += 1
+    return moves
 
 pygame.init()
 screen = pygame.display.set_mode(RESOLUTION)
 clock = pygame.time.Clock()
 selected_square = None
 moves = []
+en_passant_square = None
 
 while True:
     for event in pygame.event.get():
