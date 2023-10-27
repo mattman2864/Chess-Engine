@@ -216,7 +216,7 @@ while True:
             else:
                 new_square = 63-int(mpos[1]//SQUARE_SIZE*8 + mpos[0]//SQUARE_SIZE)
             if new_square in [move.end for move in moves]:
-                board.make_move(Move(selected_square, new_square));
+                board.make_move(Move(selected_square, new_square))
                 board.turn *= -1
                 new_square = None
             elif new_square == selected_square:
