@@ -32,10 +32,12 @@ class Move:
         self.start = start
         self.end = end
         # TODO: Add checks and en passant
+    def __str__(self):
+        return f"Move from {self.start} to {self.end}"
 class Board:
     '''Describes the current state of the board. Incudes info on castling, en passant, and checks.'''
     def __init__(self):
-        self.board = STARTING_BOARD
+        self.board = TEST_BOARD
         self.castling = {6:True, 12:True, -6:True, -12:True}
         self.turn = 1
     def make_move(self, move: Move):
@@ -111,7 +113,7 @@ class Board:
                 elif self.board[checkmove] * self.board[square] > 0 or not ((square//8!=checkmove//8 and not square%8!=checkmove%8) or (not square//8!=checkmove//8 and square%8!=checkmove%8)):
                     dirs.remove(dir)
                 elif self.board[checkmove] * self.board[square] < 0:
-                    moves.append(checkmove)
+                    moves.append(Move(square, checkmove))
                     dirs.remove(dir)
                 else:
                     moves.append(Move(square, checkmove))
