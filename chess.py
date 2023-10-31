@@ -37,7 +37,7 @@ class Move:
 class Board:
     '''Describes the current state of the board. Incudes info on castling, en passant, and checks.'''
     def __init__(self):
-        self.board = TEST_BOARD
+        self.board = STARTING_BOARD
         self.castling = {6:True, 12:True, -6:True, -12:True}
         self.turn = 1
     def make_move(self, move: Move):
@@ -131,6 +131,7 @@ class Board:
                 if self.board[checkmove] * self.board[square] > 0 or abs(checkmove%8-square%8) > 1:
                     continue
                 moves.append(Move(square, checkmove))
+
         return moves
     def get_all_pieces(self):
         squares = []
@@ -203,8 +204,7 @@ selected_square = None
 moves = []
 en_passant_square = None
 board = Board()
-gamehistory = []
-
+game_history = []
 
 while True:
     for event in pygame.event.get():
