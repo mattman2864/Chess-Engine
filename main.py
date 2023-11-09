@@ -1,6 +1,5 @@
 import pygame as pg
-from engine import GameState, Move
-from numpy import intersect1d
+from chess import GameState, Move
 
 # Constants
 resolution = (700, 500)

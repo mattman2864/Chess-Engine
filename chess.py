@@ -16,7 +16,6 @@ class GameState:
         self.current_cr = CastlingRights(True, True, True, True)
         self.cr_log = [CastlingRights(self.current_cr.wks, self.current_cr.bks,
                                       self.current_cr.wqs, self.current_cr.bqs,)]
-        self.undo_cr_log = []
         
 
     def fen_to_array(self, fen):
@@ -100,8 +99,7 @@ class GameState:
             self.enpassant_possible = ()
         
         # Undo Castling Rights
-        n = self.cr_log.pop()
-        self.undo_cr_log.append(CastlingRights(n.wks, n.bks, n.wqs, n.bqs))
+        self.cr_log.pop()
         n = self.cr_log[-1]
         self.current_cr = CastlingRights(n.wks, n.bks, n.wqs, n.bqs)
 
@@ -115,15 +113,9 @@ class GameState:
                 self.board[move.end_row][move.end_col + 1] = '--'
 
     def redo_move(self):
-        print(len(self.undo_list), len(self.undo_cr_log))
-        if not (self.undo_list and self.undo_cr_log):
+        if not (self.undo_list):
             return
         self.apply_move(self.undo_list.pop())
-        
-
-        self.cr_log.append(self.undo_cr_log.pop())
-        n = self.cr_log[-1]
-        self.current_cr = CastlingRights(n.wks, n.bks, n.wqs, n.bqs)
 
     def update_cr(self, move):
         if move.piece_moved == 'wk':
@@ -139,11 +131,24 @@ class GameState:
                 elif move.start_col == 7:
                     self.current_cr.wks = False
         elif move.piece_moved == 'br':
-            if move.start_row == 7:
+            if move.start_row == 0:
                 if move.start_col == 0:
                     self.current_cr.bqs = False
                 elif move.start_col == 7:
                     self.current_cr.bks = False
+        elif move.piece_captured == 'wr':
+            if move.end_row == 7:
+                if move.end_col == 0:
+                    self.current_cr.wqs = False
+                elif move.end_col == 7:
+                    self.current_cr.wks = False
+        elif move.piece_captured == 'br':
+            if move.end_row == 0:
+                if move.end_col == 0:
+                    self.current_cr.bqs = False
+                elif move.end_col == 7:
+                    self.current_cr.bks = False
+        
 
     def undo_stack_reset(self):
         self.undo_list = []
@@ -156,12 +161,8 @@ class GameState:
         moves = self.get_all_moves()
         if self.white_to_move:
             moves += self.get_castle_moves(7, 4)
-            print('castle moves: ', self.get_castle_moves(7, 4))
-            print(self.current_cr)
         else:
             moves += self.get_castle_moves(0, 4)
-            print('castle moves: ', self.get_castle_moves(0, 4))
-            print(self.current_cr)
         loop_moves = moves.copy()
         for move in loop_moves:
             self.apply_move(move)
@@ -178,6 +179,7 @@ class GameState:
                 self.stalemate = True
         elif self.is_in_check():
             self.moves_list[-1].is_check = True
+
         self.white_to_move = not self.white_to_move
         self.enpassant_possible = temp_enpassant
         self.current_cr = temp_castle
@@ -197,6 +199,7 @@ class GameState:
         attacks = self.get_all_moves()
         for attack in attacks:
             if (attack.end_row, attack.end_col) == (row, col):
+                self.white_to_move = not self.white_to_move
                 return True
         self.white_to_move = not self.white_to_move
         return False
