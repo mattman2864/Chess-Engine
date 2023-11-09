@@ -1,5 +1,6 @@
 import pygame as pg
 from chess import GameState, Move
+import engine
 
 # Constants
 resolution = (700, 500)
@@ -84,31 +85,37 @@ if __name__ == "__main__":
     valid_moves = game_state.get_valid_moves()
     move_made = False
     local_moves = []
+    game_over = False
+
+    player_one = True # If human playing white, true, if ai, then false
+    player_two = False # Same, but for black
 
     while running:
+        human_turn = game_state.white_to_move and player_one or (not game_state.white_to_move and player_two)
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
             if event.type == pg.MOUSEBUTTONDOWN:
-                new_row = pg.mouse.get_pos()[1]//square_size
-                new_col = pg.mouse.get_pos()[0]//square_size
-                if new_col >= NUM_SQUARES:
-                    continue
-                if (new_row, new_col) == selected_square:
-                    selected_square = ()
-                else:
-                    if selected_square and game_state.board[selected_square[0]][selected_square[1]] != '--':
-                        move = Move(selected_square, (new_row, new_col), game_state.board)
-                        for i in range(len(valid_moves)):
-                            if move == valid_moves[i]:
-                                game_state.make_move(valid_moves[i])
-                                selected_square = ()
-                                move_made = True
-                                break
-                        selected_square = (new_row, new_col)
+                if not game_over and human_turn:
+                    new_row = pg.mouse.get_pos()[1]//square_size
+                    new_col = pg.mouse.get_pos()[0]//square_size
+                    if new_col >= NUM_SQUARES:
+                        continue
+                    if (new_row, new_col) == selected_square:
+                        selected_square = ()
                     else:
-                        selected_square = (new_row, new_col)
-                    local_moves = game_state.get_local_moves(selected_square[0], selected_square[1])
+                        if selected_square and game_state.board[selected_square[0]][selected_square[1]] != '--':
+                            move = Move(selected_square, (new_row, new_col), game_state.board)
+                            for i in range(len(valid_moves)):
+                                if move == valid_moves[i]:
+                                    game_state.make_move(valid_moves[i])
+                                    selected_square = ()
+                                    move_made = True
+                                    break
+                            selected_square = (new_row, new_col)
+                        else:
+                            selected_square = (new_row, new_col)
+                        local_moves = game_state.get_local_moves(selected_square[0], selected_square[1])
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_LEFT:
                     game_state.undo_move()
@@ -124,9 +131,18 @@ if __name__ == "__main__":
                 load_pieces()
                 moves_font = pg.font.Font('font.ttf', font_size)
 
+        # AI Move Finder
+        if not game_over and not human_turn:
+            ai_move = engine.get_move(valid_moves, game_state, 'blind_take')
+            game_state.make_move(ai_move)
+            move_made = True
+
         if move_made:
             valid_moves = game_state.get_valid_moves()
             move_made = False
+            if game_state.checkmate: game_over = True
+            elif game_state.stalemate: game_over = True
+            else: game_over = False
             selected_square = ()
 
         screen.fill('#111111')

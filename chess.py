@@ -179,6 +179,9 @@ class GameState:
                 self.stalemate = True
         elif self.is_in_check():
             self.moves_list[-1].is_check = True
+        else:
+            self.checkmate = False
+            self.stalemate = False
 
         self.white_to_move = not self.white_to_move
         self.enpassant_possible = temp_enpassant
