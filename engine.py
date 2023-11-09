@@ -16,6 +16,7 @@ class GameState:
         self.current_cr = CastlingRights(True, True, True, True)
         self.cr_log = [CastlingRights(self.current_cr.wks, self.current_cr.bks,
                                       self.current_cr.wqs, self.current_cr.bqs,)]
+        self.undo_cr_log = []
         
 
     def fen_to_array(self, fen):
@@ -99,8 +100,10 @@ class GameState:
             self.enpassant_possible = ()
         
         # Undo Castling Rights
-        self.cr_log.pop()
-        self.current_cr = self.cr_log[-1]
+        n = self.cr_log.pop()
+        self.undo_cr_log.append(CastlingRights(n.wks, n.bks, n.wqs, n.bqs))
+        n = self.cr_log[-1]
+        self.current_cr = CastlingRights(n.wks, n.bks, n.wqs, n.bqs)
 
         # Undo Castle Move
         if move.is_castle:
@@ -112,9 +115,15 @@ class GameState:
                 self.board[move.end_row][move.end_col + 1] = '--'
 
     def redo_move(self):
-        if not self.undo_list:
+        print(len(self.undo_list), len(self.undo_cr_log))
+        if not (self.undo_list and self.undo_cr_log):
             return
         self.apply_move(self.undo_list.pop())
+        
+
+        self.cr_log.append(self.undo_cr_log.pop())
+        n = self.cr_log[-1]
+        self.current_cr = CastlingRights(n.wks, n.bks, n.wqs, n.bqs)
 
     def update_cr(self, move):
         if move.piece_moved == 'wk':
@@ -148,8 +157,11 @@ class GameState:
         if self.white_to_move:
             moves += self.get_castle_moves(7, 4)
             print('castle moves: ', self.get_castle_moves(7, 4))
+            print(self.current_cr)
         else:
             moves += self.get_castle_moves(0, 4)
+            print('castle moves: ', self.get_castle_moves(0, 4))
+            print(self.current_cr)
         loop_moves = moves.copy()
         for move in loop_moves:
             self.apply_move(move)
@@ -306,24 +318,18 @@ class GameState:
     def get_castle_moves(self, row, col):
         moves = []
         if self.is_in_check():
-            print(1)
             return # Can't castle while in check
         if self.white_to_move and self.current_cr.wks or (not self.white_to_move and self.current_cr.bks):
-            print(2)
             moves += self.get_kscm(row, col)
         if self.white_to_move and self.current_cr.wqs or (not self.white_to_move and self.current_cr.bqs):
-            print(3)
             moves += self.get_qscm(row, col)
-        print(4)
         return moves
     
 
     def get_kscm(self, row, col):
         moves = []
         if self.board[row][col+1] == '--' and self.board[row][col+2] == '--':
-            print(5)
             if not self.square_under_attack(row, col + 1) and not self.square_under_attack(row, col + 2):
-                print(6)
                 moves.append(Move((row, col), (row, col+2), self.board, castle=True))
         return moves
     
@@ -331,9 +337,7 @@ class GameState:
     def get_qscm(self, row, col):
         moves = []
         if self.board[row][col-1] == '--' and self.board[row][col-2] == '--' and self.board[row][col-3] == '--':
-            print(7)
             if not self.square_under_attack(row, col - 1) and not self.square_under_attack(row, col - 2) and not self.square_under_attack(row, col - 3):
-                print(8)
                 moves.append(Move((row, col), (row, col-2), self.board, castle=True))
         return moves
     
@@ -344,6 +348,8 @@ class CastlingRights:
         self.bks = bks
         self.wqs = wqs
         self.bqs = bqs
+    def __str__(self):
+        return f"{self.wks}, {self.bks}, {self.wqs}, {self.bqs}"
 
 
 class Move:

@@ -8,7 +8,7 @@ NUM_SQUARES = 8
 square_size = resolution[1]//NUM_SQUARES
 font_size = int((20/1000)*resolution[0])
 
-FRAMERATE = 10
+FRAMERATE = 30
 
 TITLE = 'Chess in Python'
 
