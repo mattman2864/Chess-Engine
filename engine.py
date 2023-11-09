@@ -1,6 +1,3 @@
-from collections.abc import Iterable
-
-
 class GameState:
     def __init__(self):
         self.board = [
@@ -24,6 +21,9 @@ class GameState:
             "k": self.get_king_moves,
         }
         self.white_to_move = True
+        self.checkmate = False
+        self.stalemate = False
+        self.enpassant_possible = ()
 
     def make_move(self, move):
         self.apply_move(move)
@@ -34,19 +34,41 @@ class GameState:
         self.board[move.end_row][move.end_col] = move.piece_moved
         self.moves_list.append(move)
         self.white_to_move = not self.white_to_move
+
+        # Pawn Promotion
         if move.is_promotion:
-            ...
-    def undo_move(self):
+            self.board[move.end_row][move.end_col] = move.piece_moved[0] + 'q'
+
+        # En Passant
+        if move.is_enpassant:
+            print(1)
+            self.board[move.start_row][move.end_col] = '--' # Capturing Pawn
+
+        # Update enpassant_possible
+        if move.piece_moved[1] == 'p' and abs(move.start_row - move.end_row) == 2:
+            self.enpassant_possible = ((move.start_row + move.end_row)//2, move.start_col)
+        else:
+            self.enpassant_possible = ()
+
+    def undo_move(self, undo_list=True):
         if not self.moves_list:
             return
         move = self.moves_list.pop()
-        self.undo_list.append(move)
+        if undo_list:
+            self.undo_list.append(move)
         self.board[move.start_row][move.start_col] = move.piece_moved
         self.board[move.end_row][move.end_col] = move.piece_captured
         self.white_to_move = not self.white_to_move
+        if move.is_enpassant:
+            print(2)
+            self.board[move.end_row][move.end_col] = '--'
+            self.board[move.start_row][move.end_col] = move.piece_captured
+            self.enpassant_possible = (move.end_row, move.end_col) # Leave landing square blank
+        else:
+            self.enpassant_possible = ()
 
     def redo_move(self):
-        if not len(self.undo_list):
+        if not self.undo_list:
             return
         self.apply_move(self.undo_list.pop())
 
@@ -54,9 +76,27 @@ class GameState:
         self.undo_list = []
 
     def get_valid_moves(self):
+        temp_enpassant = self.enpassant_possible
         moves = self.get_all_moves()
+        loop_moves = moves.copy()
+        for move in loop_moves:
+            self.apply_move(move)
+            if self.is_in_check():
+                moves.remove(move)
+            self.undo_move(undo_list=False)
+        if len(moves) == 0:
+            if self.is_in_check():
+                self.checkmate = True
+            else:
+                self.stalemate = True
+        self.enpassant_possible = temp_enpassant
         return moves
-    
+    def is_in_check(self):
+        attacks = self.get_all_moves()
+        for attack in attacks:
+            if self.board[attack.end_row][attack.end_col] == ('bk' if self.white_to_move else 'wk'):
+                return True
+        return False
     def get_all_moves(self):
         moves = []
         for row in range(len(self.board)):
@@ -81,9 +121,13 @@ class GameState:
         if col-1 >= 0:
             if self.board[row-d][col-1][0] == ('b' if self.white_to_move else 'w'):
                 moves.append(Move((row, col), (row-d, col-1), self.board))
+            elif (row-d, col-1) == self.enpassant_possible:
+                moves.append(Move((row, col), (row-d, col-1), self.board, enpassant=True))
         if col+1 <= 7:
             if self.board[row-d][col+1][0] == ('b' if self.white_to_move else 'w'):
                 moves.append(Move((row, col), (row-d, col+1), self.board))
+            elif (row-d, col+1) == self.enpassant_possible:
+                moves.append(Move((row, col), (row-d, col+1), self.board, enpassant=True))
         return moves
     
     def get_knight_moves(self, row, col):
@@ -152,7 +196,7 @@ class GameState:
 
 
 class Move:
-    def __init__(self, start_square, end_square, board, special_move=False):
+    def __init__(self, start_square, end_square, board, enpassant=False):
         self.start_square = start_square
         self.start_row = self.start_square[0]
         self.start_col = self.start_square[1]
@@ -161,50 +205,53 @@ class Move:
         self.end_col = self.end_square[1]
         self.piece_moved = board[self.start_row][self.start_col]
         self.piece_captured = board[self.end_row][self.end_col]
-        self.is_castle = False
-        self.is_promotion = False
-        self.is_enpassant = False
-        match special_move:
-            case 'castle':
-                self.is_castle = True
-            case 'promotion':
-                self.is_promotion = True
-            case 'enpassant':
-                self.is_enpassant = True
+
+        # Pawn Promotion
+        self.is_promotion = (self.piece_moved == 'wp' and self.end_row == 0) or (self.piece_moved == 'bp' and self.end_row == 7)
+
+        # En Passant
+        self.is_enpassant = enpassant
+        if self.is_enpassant:
+            self.piece_captured = 'wp' if self.piece_moved == 'bp' else 'bp'
+
         self.id = self.start_row + self.start_col*10 + self.end_row*100 + self.end_col*1000
+
     def __str__(self):
         col_to_alpha = {0:'a', 1:'b', 2:'c', 3:'d', 4:'e', 5:'f', 6:'g', 7:'h'}
+        string = ''
         if self.piece_moved[1] == 'p':
-            if self.piece_captured != '--':
-                return col_to_alpha[self.start_col] + 'x' + col_to_alpha[self.end_col] + str(8-self.end_row)
+            if self.piece_captured != '--' or self.is_enpassant:
+                string = col_to_alpha[self.start_col] + 'x' + col_to_alpha[self.end_col] + str(8-self.end_row)
             else:
-                return col_to_alpha[self.end_col] + str(8-self.end_row)
+                string = col_to_alpha[self.end_col] + str(8-self.end_row)
         elif self.piece_moved[1] == 'n':
             if self.piece_captured != '--':
-                return 'N' + 'x' + col_to_alpha[self.end_col] + str(8-self.end_row)
+                string = 'N' + 'x' + col_to_alpha[self.end_col] + str(8-self.end_row)
             else:
-                return 'N' + col_to_alpha[self.end_col] + str(8-self.end_row)
+                string = 'N' + col_to_alpha[self.end_col] + str(8-self.end_row)
         elif self.piece_moved[1] == 'b':
             if self.piece_captured != '--':
-                return 'B' + 'x' + col_to_alpha[self.end_col] + str(8-self.end_row)
+                string = 'B' + 'x' + col_to_alpha[self.end_col] + str(8-self.end_row)
             else:
-                return 'B' + col_to_alpha[self.end_col] + str(8-self.end_row)
+                string = 'B' + col_to_alpha[self.end_col] + str(8-self.end_row)
         elif self.piece_moved[1] == 'r':
             if self.piece_captured != '--':
-                return 'R' + 'x' + col_to_alpha[self.end_col] + str(8-self.end_row)
+                string = 'R' + 'x' + col_to_alpha[self.end_col] + str(8-self.end_row)
             else:
-                return 'R' + col_to_alpha[self.end_col] + str(8-self.end_row)
+                string = 'R' + col_to_alpha[self.end_col] + str(8-self.end_row)
         elif self.piece_moved[1] == 'q':
             if self.piece_captured != '--':
-                return 'Q' + 'x' + col_to_alpha[self.end_col] + str(8-self.end_row)
+                string = 'Q' + 'x' + col_to_alpha[self.end_col] + str(8-self.end_row)
             else:
-                return 'Q' + col_to_alpha[self.end_col] + str(8-self.end_row)
+                string = 'Q' + col_to_alpha[self.end_col] + str(8-self.end_row)
         elif self.piece_moved[1] == 'k':
             if self.piece_captured != '--':
-                return 'K' + 'x' + col_to_alpha[self.end_col] + str(8-self.end_row)
+                string = 'K' + 'x' + col_to_alpha[self.end_col] + str(8-self.end_row)
             else:
-                return 'K' + col_to_alpha[self.end_col] + str(8-self.end_row)
-        return 'placeholder'
+                string = 'K' + col_to_alpha[self.end_col] + str(8-self.end_row)
+        if self.is_promotion:
+            string += '=Q'
+        return string
     def __eq__(self, other):
         if not isinstance(other, Move):
             return False

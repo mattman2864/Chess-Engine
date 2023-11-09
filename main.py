@@ -3,7 +3,7 @@ from engine import GameState, Move
 from numpy import intersect1d
 
 # Constants
-resolution = (900, 700)
+resolution = (700, 500)
 NUM_SQUARES = 8
 square_size = resolution[1]//NUM_SQUARES
 font_size = int((20/1000)*resolution[0])
@@ -84,6 +84,7 @@ if __name__ == "__main__":
     game_state = GameState()
     valid_moves = game_state.get_valid_moves()
     move_made = False
+    local_moves = []
 
     while running:
         for event in pg.event.get():
@@ -101,13 +102,14 @@ if __name__ == "__main__":
                         move = Move(selected_square, (new_row, new_col), game_state.board)
                         for i in range(len(valid_moves)):
                             if move == valid_moves[i]:
-                                game_state.make_move(Move(selected_square, (new_row, new_col), game_state.board))
+                                game_state.make_move(valid_moves[i])
                                 selected_square = ()
                                 move_made = True
                                 break
                         selected_square = (new_row, new_col)
                     else:
                         selected_square = (new_row, new_col)
+                    local_moves = game_state.get_local_moves(selected_square[0], selected_square[1])
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_LEFT:
                     game_state.undo_move()
@@ -133,7 +135,7 @@ if __name__ == "__main__":
         highlight_square(screen, selected_square)
         draw_pieces(screen, game_state.board)
         if selected_square:
-            draw_moves(screen, intersection(game_state.get_all_moves(), game_state.get_local_moves(selected_square[0], selected_square[1])))
+            draw_moves(screen, intersection(valid_moves, local_moves))
 
         draw_move_list(screen, game_state.moves_list, game_state.undo_list.copy(), moves_font)
         draw_watermark(screen, moves_font)
