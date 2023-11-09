@@ -1,15 +1,6 @@
 class GameState:
     def __init__(self):
-        self.board = [
-            ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'],
-            ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'],
-            ['--', '--', '--', '--', '--', '--', '--', '--'],
-            ['--', '--', '--', '--', '--', '--', '--', '--'],
-            ['--', '--', '--', '--', '--', '--', '--', '--'],
-            ['--', '--', '--', '--', '--', '--', '--', '--'],
-            ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'],
-            ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr']
-        ]
+        self.board = self.fen_to_array('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
         self.moves_list = []
         self.undo_list = []
         self.move_functions = {
@@ -24,7 +15,23 @@ class GameState:
         self.checkmate = False
         self.stalemate = False
         self.enpassant_possible = ()
-
+    def fen_to_array(self, fen):
+        array = [[]]
+        for i in range(len(fen)):
+            if fen[i].isalpha():
+                if fen[i].isupper():
+                    array[-1].append(f'w{fen[i].lower()}')
+                else:
+                    array[-1].append(f'b{fen[i].lower()}')
+            elif fen[i].isnumeric():
+                for i in range(int(fen[i])):
+                    array[-1].append('--')
+            elif fen[i] == '/':
+                array.append([])
+            elif fen[i] == ' ':
+                break
+        return array
+            
     def make_move(self, move):
         self.apply_move(move)
         self.undo_stack_reset()
@@ -41,7 +48,6 @@ class GameState:
 
         # En Passant
         if move.is_enpassant:
-            print(1)
             self.board[move.start_row][move.end_col] = '--' # Capturing Pawn
 
         # Update enpassant_possible
@@ -60,7 +66,6 @@ class GameState:
         self.board[move.end_row][move.end_col] = move.piece_captured
         self.white_to_move = not self.white_to_move
         if move.is_enpassant:
-            print(2)
             self.board[move.end_row][move.end_col] = '--'
             self.board[move.start_row][move.end_col] = move.piece_captured
             self.enpassant_possible = (move.end_row, move.end_col) # Leave landing square blank
@@ -85,10 +90,14 @@ class GameState:
                 moves.remove(move)
             self.undo_move(undo_list=False)
         if len(moves) == 0:
+            self.white_to_move = not self.white_to_move
             if self.is_in_check():
                 self.checkmate = True
+                print('CHECKMATE')
             else:
                 self.stalemate = True
+                print('STALEMATE')
+            self.white_to_move = not self.white_to_move
         self.enpassant_possible = temp_enpassant
         return moves
     def is_in_check(self):
