@@ -89,15 +89,19 @@ class GameState:
             if self.is_in_check():
                 moves.remove(move)
             self.undo_move(undo_list=False)
+        self.white_to_move = not self.white_to_move
         if len(moves) == 0:
-            self.white_to_move = not self.white_to_move
             if self.is_in_check():
                 self.checkmate = True
+                self.moves_list[-1].is_check = True
+                self.moves_list[-1].is_mate = True
                 print('CHECKMATE')
             else:
                 self.stalemate = True
                 print('STALEMATE')
-            self.white_to_move = not self.white_to_move
+        elif self.is_in_check():
+            self.moves_list[-1].is_check = True
+        self.white_to_move = not self.white_to_move
         self.enpassant_possible = temp_enpassant
         return moves
     def is_in_check(self):
@@ -222,7 +226,8 @@ class Move:
         self.is_enpassant = enpassant
         if self.is_enpassant:
             self.piece_captured = 'wp' if self.piece_moved == 'bp' else 'bp'
-
+        self.is_mate = False
+        self.is_check = False
         self.id = self.start_row + self.start_col*10 + self.end_row*100 + self.end_col*1000
 
     def __str__(self):
@@ -260,6 +265,11 @@ class Move:
                 string = 'K' + col_to_alpha[self.end_col] + str(8-self.end_row)
         if self.is_promotion:
             string += '=Q'
+        if self.is_mate:
+            string += '#'
+        elif self.is_check:
+            string += '+'
+
         return string
     def __eq__(self, other):
         if not isinstance(other, Move):
