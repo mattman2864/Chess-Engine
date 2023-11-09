@@ -60,7 +60,7 @@ def draw_move_list(screen, move_list, undo_list, font: pg.font.Font):
         screen.blit(text, text_rect)
 
 def draw_watermark(screen, font):
-    screen.blit(font.render('github/mattman2864', True, '#555555'), pg.Rect(resolution[1], resolution[1]-font_size, resolution[0]-resolution[1], font_size))
+    screen.blit(font.render('github.com/mattman2864', True, '#555555'), pg.Rect(resolution[1], resolution[1]-font_size, resolution[0]-resolution[1], font_size))
 
 def draw_moves(screen, moves):
     for move in moves:

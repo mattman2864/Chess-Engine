@@ -34,7 +34,8 @@ class GameState:
         self.board[move.end_row][move.end_col] = move.piece_moved
         self.moves_list.append(move)
         self.white_to_move = not self.white_to_move
-
+        if move.is_promotion:
+            ...
     def undo_move(self):
         if not self.moves_list:
             return
