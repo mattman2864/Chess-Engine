@@ -24,6 +24,8 @@ class GameState:
             "k": self.get_king_moves,
         }
         self.white_to_move = True
+        self.checkmate = False
+        self.stalemate = False
 
     def make_move(self, move):
         self.apply_move(move)
@@ -58,14 +60,21 @@ class GameState:
         loop_moves = moves.copy()
         for move in loop_moves:
             self.apply_move(move)
-            attacks = self.get_all_moves()
-            for attack in attacks:
-                if self.board[attack.end_row][attack.end_col] == ('bk' if self.white_to_move else 'wk'):
-                    moves.remove(move)
-                    break
+            if self.is_in_check():
+                moves.remove(move)
             self.undo_move(undo_list=False)
+        if len(moves) == 0:
+            if self.is_in_check():
+                self.checkmate = True
+            else:
+                self.stalemate = True
         return moves
-    
+    def is_in_check(self):
+        attacks = self.get_all_moves()
+        for attack in attacks:
+            if self.board[attack.end_row][attack.end_col] == ('bk' if self.white_to_move else 'wk'):
+                return True
+        return False
     def get_all_moves(self):
         moves = []
         for row in range(len(self.board)):
@@ -170,9 +179,9 @@ class Move:
         self.end_col = self.end_square[1]
         self.piece_moved = board[self.start_row][self.start_col]
         self.piece_captured = board[self.end_row][self.end_col]
-        self.is_castle = False
         self.is_promotion = False
-        self.is_enpassant = False
+        if (self.piece_moved == 'wp' and self.end_row == 0) or (self.piece_moved == 'bp' and self.end_row == 7):
+            self.is_promotion = True
         match special_move:
             case 'castle':
                 self.is_castle = True
