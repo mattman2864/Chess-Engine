@@ -6,12 +6,12 @@ This is a project I've been working on for a few weeks, and have had many restar
 - undo/redo moves
 - moves list on side of screen
 - clean UI + resizeable window
+- Checks
+- En Passant
+- Promotion
 
 ### TODO:
-- Checks
 - Checkmate
 - Stalemate
 - Castling
-- En Passant
-- Promotion
-  - UI For user choice
+- UI For user choice on promotion
